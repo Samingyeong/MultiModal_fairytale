@@ -1,0 +1,14 @@
+.gallery-page { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+.gallery-page h2 { font-size: 24px; margin-bottom: 8px; }
+.desc { color: #666; margin-bottom: 28px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+.card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.card video { display: block; width: 100%; background: #000; }
+.card-label { padding: 10px 12px; }
+.label-row { cursor: pointer; padding: 4px 0; }
+.labeled { font-size: 16px; font-weight: bold; color: #1a1a2e; }
+.unlabeled { font-size: 13px; color: #aaa; font-style: italic; }
+.edit-row { display: flex; gap: 6px; }
+.edit-row input { flex: 1; padding: 4px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+.edit-row button { padding: 4px 10px; background: #1a1a2e; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.word-id { font-size: 11px; color: #bbb; display: block; margin-top: 4px; }

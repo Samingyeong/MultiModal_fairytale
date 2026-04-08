@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>모두의 책장</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>📚 모두의 책장</h1>
+    <p class="subtitle">일반 아동 · 시각장애 · 청각장애 아동을 위한 통합 도서 서비스</p>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="책 제목, 저자 검색..." />
+      <button id="searchBtn">검색</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- 카테고리 탭 -->
+    <div class="category-tabs">
+      <button class="tab active" data-type="all">전체</button>
+      <button class="tab" data-type="normal">일반 아동</button>
+      <button class="tab" data-type="visual">시각장애 아동</button>
+      <button class="tab" data-type="hearing">청각장애 아동</button>
+    </div>
+
+    <!-- 책 목록 -->
+    <div id="bookList" class="book-grid"></div>
+    <div id="loading" class="loading hidden">불러오는 중...</div>
+    <div id="noResult" class="no-result hidden">검색 결과가 없어요.</div>
+
+    <!-- 페이지네이션 -->
+    <div id="pagination" class="pagination"></div>
+  </main>
+
+  <!-- 책 상세 모달 -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans KR', sans-serif; background: #e8dcc8; color: #222; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* 상단 바 */
+.top-bar {
+  display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+  background: #3d2b1f; color: white; flex-wrap: wrap;
+}
+.book-title-top { flex: 1; font-size: 16px; font-weight: bold; }
+#backBtn {
+  padding: 5px 12px; background: rgba(255,255,255,0.15); border: none;
+  color: white; border-radius: 6px; cursor: pointer; font-size: 13px;
+}
+#backBtn:hover { background: rgba(255,255,255,0.3); }
+
+/* 모드 탭 */
+.mode-tabs {
+  display: flex; gap: 0; background: #2c1f14; padding: 0 20px;
+}
+.mode-tab {
+  padding: 10px 20px; border: none; background: transparent;
+  color: #aaa; cursor: pointer; font-size: 14px; border-bottom: 3px solid transparent;
+}
+.mode-tab.active { color: #f5e6c8; border-bottom-color: #e8a020; }
+
+/* 언어 버튼 */
+.lang-bar { display: flex; gap: 5px; flex-wrap: wrap; }
+.lang-btn {
+  padding: 3px 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.3);
+  background: transparent; color: white; cursor: pointer; font-size: 12px;
+}
+.lang-btn.active { background: #e8a020; border-color: #e8a020; color: #fff; }
+
+/* 책 모드 */
+.book-mode { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.book-wrap {
+  display: flex; width: 100%; max-width: 1100px;
+  background: #fdf6e3;
+  border-radius: 4px 12px 12px 4px;
+  box-shadow: -6px 0 12px rgba(0,0,0,0.3), 6px 6px 20px rgba(0,0,0,0.25);
+  min-height: 560px; overflow: hidden;
+  border-left: 6px solid #8b5e3c;
+}
+.book-page { flex: 1; padding: 24px; }
+.left-page {
+  background: #f5edd8;
+  border-right: 2px solid #d4b896;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.right-page { background: #fdf6e3; display: flex; flex-direction: column; }
+.page-header {
+  font-size: 13px; color: #8b5e3c; font-weight: bold;
+  padding-bottom: 8px; border-bottom: 1px solid #e0cba8; margin-bottom: 12px;
+}
+
+/* 자막 목록 */
+.subtitle-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; max-height: 480px; padding-right: 4px; }
+.subtitle-list::-webkit-scrollbar { width: 4px; }
+.subtitle-list::-webkit-scrollbar-thumb { background: #c9a87c; border-radius: 4px; }
+
+.subtitle-cue {
+  padding: 8px 10px; border-radius: 6px;
+  border-left: 3px solid transparent; transition: all 0.2s;
+}
+.subtitle-cue.active { background: #fff3cd; border-left-color: #e8a020; }
+.subtitle-cue .time {
+  font-size: 10px; color: #bbb; margin-bottom: 3px; cursor: pointer;
+}
+.subtitle-cue .time:hover { color: #e8a020; }
+.subtitle-cue .text { font-size: 15px; line-height: 1.8; color: #3d2b1f; }
+.word {
+  cursor: pointer; border-radius: 3px; padding: 1px 2px;
+  border-bottom: 1px dashed #c9a87c; transition: background 0.15s;
+}
+.word:hover { background: #ffe082; }
+.loading-msg { color: #aaa; font-size: 13px; text-align: center; padding: 40px 0; }
+
+/* 영상 모드 */
+.watch-mode { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; background: #111; }
+.watch-mode video { max-width: 900px; width: 100%; border-radius: 10px; }
+.hidden { display: none !important; }
+
+/* 단어 사이드패널 */
+.word-panel {
+  position: fixed; right: 0; top: 0; bottom: 0; width: 320px;
+  background: white; box-shadow: -4px 0 20px rgba(0,0,0,0.2);
+  z-index: 50; overflow-y: auto; transition: transform 0.3s;
+}
+.word-panel.hidden { transform: translateX(100%); display: block !important; }
+.word-panel-inner { padding: 20px; }
+#wordPanelClose {
+  position: absolute; top: 12px; right: 14px;
+  background: none; border: none; font-size: 18px; cursor: pointer; color: #888;
+}
+
+/* 사전 내용 */
+.dict-word { font-size: 26px; font-weight: bold; color: #3d2b1f; margin-bottom: 4px; margin-top: 8px; }
+.dict-meta { font-size: 12px; color: #888; margin-bottom: 14px; }
+.dict-grade { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; margin-left: 6px; }
+.grade-초급 { background: #d4edda; color: #155724; }
+.grade-중급 { background: #fff3cd; color: #856404; }
+.grade-고급 { background: #f8d7da; color: #721c24; }
+.dict-def { margin-bottom: 10px; }
+.dict-def-num { font-size: 12px; color: #aaa; margin-bottom: 2px; }
+.dict-def-text { font-size: 14px; line-height: 1.7; color: #333; }
+.dict-divider { border: none; border-top: 1px solid #eee; margin: 14px 0; }
+
+/* 따라쓰기 */
+.write-section { margin-top: 16px; }
+.write-label { font-size: 13px; font-weight: bold; color: #3d2b1f; margin-bottom: 10px; }
+.canvas-wrap {
+  position: relative; width: 360px; height: 100px;
+  border: 2px solid #ddd; border-radius: 8px; background: white; margin-bottom: 10px;
+}
+.canvas-wrap canvas { position: absolute; top: 0; left: 0; touch-action: none; }
+#guideCanvas { opacity: 0.15; }
+#clearBtn {
+  padding: 7px 18px; background: #6c757d; color: white;
+  border: none; border-radius: 6px; cursor: pointer; font-size: 13px;
+}

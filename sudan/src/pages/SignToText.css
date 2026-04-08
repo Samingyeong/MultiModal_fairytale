@@ -1,0 +1,13 @@
+.page { max-width: 700px; margin: 40px auto; padding: 0 20px; }
+.page h2 { font-size: 24px; margin-bottom: 8px; }
+.desc { color: #666; margin-bottom: 24px; }
+.camera-area { display: flex; justify-content: center; margin-bottom: 16px; }
+.camera-area video { width: 480px; height: 360px; border-radius: 12px; background: #000; object-fit: cover; }
+.camera-area video.hidden { display: none; }
+.cam-placeholder { width: 480px; height: 360px; background: #e0e0e0; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #888; }
+.controls { display: flex; justify-content: center; margin-bottom: 16px; }
+.controls button { padding: 12px 32px; background: #1a1a2e; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+.controls button.stop { background: #c62828; }
+.status { text-align: center; color: #555; margin-bottom: 16px; }
+.result-box { background: white; border: 2px solid #1a1a2e; border-radius: 8px; padding: 16px; font-size: 18px; margin-bottom: 16px; }
+.notice { font-size: 13px; color: #999; line-height: 1.8; }

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 따라쓰기 테스트</title>
+    <style>
+        body { text-align: center; font-family: 'Nanum Gothic', sans-serif; background-color: #f9f9f9; }
+        .canvas-container { position: relative; width: 400px; height: 200px; margin: 20px auto; border: 3px solid #333; background: white; }
+        canvas { position: absolute; top: 0; left: 0; touch-action: none; }
+        #guideCanvas { opacity: 0.2; } /* 가이드 글씨 투명도 */
+        .buttons { margin-top: 20px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 8px; border: none; background: #007bff; color: white; margin: 5px; }
+        button#clear { background: #6c757d; }
+    </style>
+</head>
+<body>
+
+    <h2>✏️ 흐릿한 글씨를 따라 써보세요!</h2>
+    
+    <div class="canvas-container">
+        <canvas id="guideCanvas" width="400" height="200"></canvas>
+        <canvas id="inputCanvas" width="400" height="200"></canvas>
+    </div>
+
+    <div class="buttons">
+        <button id="clear">다시 쓰기</button>
+        <button id="submit">AI 채점하기</button>
+    </div>
+
+    <script src="signature_pad.min.js"></script>
+    <script src="test.js"></script>
+</body>
+</html>

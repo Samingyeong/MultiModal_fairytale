@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>동화 읽기</title>
+  <link rel="stylesheet" href="reader.css" />
+</head>
+<body>
+  <header class="top-bar">
+    <button id="backBtn">← 목록</button>
+    <span id="bookTitle" class="book-title-top"></span>
+    <div class="lang-bar" id="langBar"></div>
+  </header>
+
+  <!-- 탭 -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" data-mode="book">📖 책으로 읽기</button>
+    <button class="mode-tab" data-mode="watch">🎬 영상만 보기</button>
+  </div>
+
+  <!-- 책 모드 -->
+  <div id="bookMode" class="book-mode">
+    <div class="book-wrap">
+      <!-- 왼쪽 페이지: 영상 -->
+      <div class="book-page left-page">
+        <div id="videoWrap"></div>
+      </div>
+      <!-- 오른쪽 페이지: 자막 -->
+      <div class="book-page right-page">
+        <div class="page-header">📝 이야기</div>
+        <div id="subtitleList" class="subtitle-list">
+          <p class="loading-msg">자막을 불러오는 중...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 영상 모드 -->
+  <div id="watchMode" class="watch-mode hidden">
+    <div id="watchVideoWrap"></div>
+  </div>
+
+  <!-- 단어 사이드패널 -->
+  <div id="wordPanel" class="word-panel hidden">
+    <div class="word-panel-inner">
+      <button id="wordPanelClose">✕</button>
+      <div id="wordPanelContent"></div>
+      <!-- 따라쓰기 -->
+      <div class="write-section">
+        <div class="write-label">✏️ 따라 써보기</div>
+        <div class="canvas-wrap">
+          <canvas id="guideCanvas" width="360" height="100"></canvas>
+          <canvas id="inputCanvas" width="360" height="100"></canvas>
+        </div>
+        <button id="clearBtn">다시 쓰기</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="reader.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+.page { max-width: 700px; margin: 40px auto; padding: 0 20px; }
+.page h2 { font-size: 24px; margin-bottom: 8px; }
+.desc { color: #666; margin-bottom: 24px; }
+.input-area { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.input-area textarea { padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; resize: vertical; font-family: inherit; }
+.input-area button { padding: 12px; background: #1a1a2e; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+.input-area button:hover { background: #2d2d5e; }
+.word-queue { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.word-chip { padding: 6px 14px; border-radius: 20px; background: #eee; font-size: 14px; }
+.word-chip.active { background: #1a1a2e; color: white; }
+.word-chip.done { background: #c8e6c9; color: #2e7d32; }
+.video-area { display: flex; justify-content: center; margin-bottom: 24px; }
+.video-area video { border-radius: 12px; background: #000; }
+.placeholder { width: 400px; height: 240px; background: #e0e0e0; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #888; font-size: 15px; }
+.available-words { font-size: 13px; color: #666; line-height: 1.8; }

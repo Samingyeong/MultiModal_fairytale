@@ -1,0 +1,46 @@
+# 올리지 않을 폴더들
+AI/
+AI_SAMPLE/
+Back/
+Front/
+ML/
+Unity/
+따라쓰기/
+라벨링데이터/
+원천데이터/
+.vscode/
+
+# Node modules
+node_modules/
+**/node_modules/
+
+# API 키 포함 파일 (직접 하드코딩된 키 주의)
+bookfor/check_video.py
+
+# 빌드 산출물
+**/dist/
+**/build/
+**/.next/
+
+# 환경변수
+.env
+.env.*
+!.env.example
+
+# 로그
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 대용량 파일
+*.zip
+bookfor/public/signs/
+sudan/public/signs/
