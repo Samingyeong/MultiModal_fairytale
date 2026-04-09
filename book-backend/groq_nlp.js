@@ -1,8 +1,13 @@
 const Groq = require('groq-sdk')
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-})
+let groq = null
+function getGroq() {
+  if (!groq) {
+    if (!process.env.GROQ_API_KEY) return null
+    groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+  }
+  return groq
+}
 
 const MODEL = 'llama-3.1-8b-instant'
 
@@ -31,9 +36,10 @@ const SYSTEM_PROMPT = `당신은 한국어 형태소 분석 전문가입니다.
 async function extractKeywords(text) {
   const key = 'sent:' + text
   if (cache.has(key)) return cache.get(key)
-
+  const client = getGroq()
+  if (!client) return { text, keywords: [], count: 0, error: 'GROQ_API_KEY not set' }
   try {
-    const r = await groq.chat.completions.create({
+    const r = await client.chat.completions.create({
       model: MODEL,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -63,9 +69,10 @@ async function extractKeywords(text) {
 async function getBaseForm(word) {
   const key = 'word:' + word
   if (cache.has(key)) return cache.get(key)
-
+  const client = getGroq()
+  if (!client) return [{ form: word, tag: 'Unknown' }]
   try {
-    const r = await groq.chat.completions.create({
+    const r = await client.chat.completions.create({
       model: MODEL,
       messages: [{
         role: 'user',

@@ -32,11 +32,13 @@ export async function fetchBooks(
   _source: 'multilang' | 'kpicture' | 'all' = 'all',
   storyTypeFilter?: Book['storyType'],
   page = 1,
-  limit = 20
+  limit = 20,
+  year?: string
 ): Promise<{ items: Book[]; total: number }> {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) })
   if (keyword)         params.set('q',    keyword)
   if (storyTypeFilter) params.set('type', storyTypeFilter)
+  if (year)            params.set('year', year)
 
   const res  = await fetch(`${BASE}/api/books?${params}`)
   const data = await res.json()
@@ -44,6 +46,11 @@ export async function fetchBooks(
     total: data.total,
     items: (data.items as Record<string, string>[]).map(toBook),
   }
+}
+
+export async function fetchBookYears(): Promise<{ year: string; cnt: number }[]> {
+  const res = await fetch(`${BASE}/api/books/years`)
+  return res.json()
 }
 
 export async function fetchNewBooks(limit = 20): Promise<Book[]> {

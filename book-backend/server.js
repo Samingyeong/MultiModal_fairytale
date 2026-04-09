@@ -25,29 +25,29 @@ app.use('/images', express.static(IMG_DIR, { maxAge: '7d', etag: true }))
 
 // ─── 책 목록 API ──────────────────────────────────────────────
 app.get('/api/books', (req, res) => {
-  const { type, q, page = '1', limit = '20' } = req.query
+  const { type, q, year, page = '1', limit = '20' } = req.query
   const offset = (parseInt(page) - 1) * parseInt(limit)
   const lim    = parseInt(limit)
-  let rows, total
 
-  if (q) {
-    const like = `%${q}%`
-    if (type && type !== 'all') {
-      rows  = db.prepare(`SELECT * FROM books WHERE story_type=? AND (title LIKE ? OR creator LIKE ?) ORDER BY reg_date DESC LIMIT ? OFFSET ?`).all(type, like, like, lim, offset)
-      total = db.prepare(`SELECT COUNT(*) as c FROM books WHERE story_type=? AND (title LIKE ? OR creator LIKE ?)`).get(type, like, like).c
-    } else {
-      rows  = db.prepare(`SELECT * FROM books WHERE title LIKE ? OR creator LIKE ? ORDER BY reg_date DESC LIMIT ? OFFSET ?`).all(like, like, lim, offset)
-      total = db.prepare(`SELECT COUNT(*) as c FROM books WHERE title LIKE ? OR creator LIKE ?`).get(like, like).c
-    }
-  } else if (type && type !== 'all') {
-    rows  = db.prepare(`SELECT * FROM books WHERE story_type=? ORDER BY reg_date DESC LIMIT ? OFFSET ?`).all(type, lim, offset)
-    total = db.prepare(`SELECT COUNT(*) as c FROM books WHERE story_type=?`).get(type).c
-  } else {
-    rows  = db.prepare(`SELECT * FROM books ORDER BY reg_date DESC LIMIT ? OFFSET ?`).all(lim, offset)
-    total = db.prepare(`SELECT COUNT(*) as c FROM books`).get().c
-  }
+  // 조건 조합
+  const conditions = []
+  const params = []
+
+  if (type && type !== 'all') { conditions.push('story_type=?'); params.push(type) }
+  if (year)                   { conditions.push("substr(reg_date,1,4)=?"); params.push(year) }
+  if (q)                      { conditions.push('(title LIKE ? OR creator LIKE ?)'); params.push(`%${q}%`, `%${q}%`) }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+
+  const rows  = db.prepare(`SELECT * FROM books ${where} ORDER BY reg_date DESC LIMIT ? OFFSET ?`).all(...params, lim, offset)
+  const total = db.prepare(`SELECT COUNT(*) as c FROM books ${where}`).get(...params).c
 
   res.json({ total, page: parseInt(page), limit: lim, items: rows })
+})
+
+app.get('/api/books/years', (req, res) => {
+  const rows = db.prepare(`SELECT DISTINCT substr(reg_date,1,4) as year, COUNT(*) as cnt FROM books GROUP BY year ORDER BY year DESC`).all()
+  res.json(rows)
 })
 
 app.get('/api/books/new', (req, res) => {

@@ -5,6 +5,15 @@ import { fetchBooks } from '../api/library'
 import type { Book } from '../types'
 import './Home.css'
 
+const DAYS = ['일','월','화','수','목','금','토']
+const _today = new Date()
+const todayDay = DAYS[_today.getDay()]
+const todayDate = `${_today.getMonth()+1}/${_today.getDate()}`
+// 오늘 기준 앞 3개, 뒤 3개 — 순환
+const todayIdx = _today.getDay()
+const prevDays = [-3, -2, -1].map(offset => DAYS[(todayIdx + offset + 7) % 7])
+const nextDays  = [1, 2, 3].map(offset => DAYS[(todayIdx + offset) % 7])
+
 const STUDY_CARDS = [
   {
     id: 'today',
@@ -57,7 +66,10 @@ const STUDY_CARDS = [
   },
 ]
 
-const BOOK_SVGS = [
+const BOOK_SVGS: Record<string, string> = {
+  all: '/svg/book_all.svg',
+}
+const BOOK_SVG_LIST = [
   '/svg/book-red.svg',
   '/svg/book-purple.svg',
   '/svg/book-green.svg',
@@ -73,6 +85,8 @@ export default function Home() {
   const navigate = useNavigate()
   const sliderRef = useRef<HTMLDivElement>(null)
   const [featured, setFeatured] = useState<Book | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchVal, setSearchVal] = useState('')
 
   useEffect(() => {
     fetchBooks('암탉과 누렁이', 'all', 'korean', 1, 10).then(({ items }) => {
@@ -90,8 +104,42 @@ export default function Home() {
       {/* 배경 장식 */}
       <div className="home-bg-left" />
       <div className="home-bg-right" />
+      <img src="/svg/Union.svg"   alt="" className="home-deco home-deco-tl" />
+      <img src="/svg/Union-2.svg" alt="" className="home-deco home-deco-br" />
+      <img src="/svg/Union-1.svg" alt="" className="home-deco home-deco-tr" />
 
       <div className="home-body">
+        {/* 날짜 바 */}
+        <div className="home-datebar-row">
+          <div className={`home-calendar ${searchOpen ? 'collapsed' : ''}`}>
+            <button className="cal-arrow">‹</button>
+            <div className="cal-days-group">
+              {prevDays.map(d => <span key={d} className="cal-day-item">{d}</span>)}
+            </div>
+            <div className="cal-today-pill">
+              <span className="cal-date">{todayDate}</span>
+              <span className="cal-today-day">{todayDay}</span>
+            </div>
+            <div className="cal-days-group">
+              {nextDays.map(d => <span key={d} className="cal-day-item">{d}</span>)}
+            </div>
+            <button className="cal-arrow">›</button>
+          </div>
+          <div className={`home-searchbar-wrap ${searchOpen ? 'open' : ''}`}>
+            <form onSubmit={e => { e.preventDefault(); if (searchVal.trim()) navigate(`/books?q=${encodeURIComponent(searchVal.trim())}`) }}>
+              <input
+                autoFocus={searchOpen}
+                value={searchVal}
+                onChange={e => setSearchVal(e.target.value)}
+                placeholder="검색어를 입력하세요"
+              />
+            </form>
+          </div>
+          <button className="datebar-icon-btn"><img src="/svg/calender.svg" alt="달력" /></button>
+          <button className="datebar-icon-btn" onClick={() => { setSearchOpen(v => !v); setSearchVal('') }}>
+            <img src="/svg/home_search.svg" alt="검색" />
+          </button>
+        </div>
         {/* 카테고리 슬라이더 */}
         <div className="cat-slider-wrap">
           <button className="cat-arrow cat-arrow-left" onClick={() => scrollSlider(-1)}>‹</button>
@@ -103,7 +151,7 @@ export default function Home() {
                 onClick={() => navigate(`/books?category=${cat.id}`)}
               >
                 <img
-                  src={BOOK_SVGS[i % BOOK_SVGS.length]}
+                  src={BOOK_SVGS[cat.id] ?? BOOK_SVG_LIST[i % BOOK_SVG_LIST.length]}
                   alt={cat.label}
                   className="cat-book-svg"
                 />
@@ -123,14 +171,15 @@ export default function Home() {
               <img src="/svg/best.svg" alt="Best seller" className="best-badge-img" />
             </div>
 
-            {/* 큰 책 일러스트 */}
+            {/* 큰 책 UI + 동그란 썸네일 오버레이 */}
             <div className="featured-book-wrap">
-              {featured?.thumbnail ? (
-                <img src={featured.thumbnail} alt={featured.title} className="featured-book-img" />
-              ) : (
-                <img src="/svg/book-red.svg" alt="featured book" className="featured-book-svg" />
-              )}
-              {/* 책 제목 오버레이 */}
+              <img src="/svg/book-red.svg" alt="book" className="featured-book-svg" />
+              <div className="featured-thumb-circle">
+                {featured?.thumbnail
+                  ? <img src={featured.thumbnail} alt={featured.title} className="featured-thumb-img" />
+                  : <span className="featured-thumb-placeholder">📖</span>
+                }
+              </div>
               <div className="featured-book-title-overlay">{featured?.title ?? '암탉과 누렁이'}</div>
             </div>
 

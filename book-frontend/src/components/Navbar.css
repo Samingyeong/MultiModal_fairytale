@@ -1,9 +1,9 @@
 .navbar {
   width: 100%;
   background: #FFB256;
-  height: 90px;
+  height: 64px;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
@@ -14,127 +14,67 @@
   margin: 0 auto;
   padding: 0 32px;
   display: flex;
-  align-items: center;
-  gap: 24px;
+  align-items: stretch;
+  gap: 4px;
 }
 
-/* 로고 */
-.navbar-logo {
+/* ── 탭 공통 스타일 ── */
+.navbar-logo,
+.navbar-link {
   font-family: 'Pinkfong Baby SharkOTF', 'Noto Sans KR', sans-serif;
-  font-size: 28px;
+  font-size: 18px;
   font-weight: 700;
-  color: #333;
+  color: #fff;
   text-decoration: none;
   white-space: nowrap;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  position: relative;
+  transition: color 0.15s;
+  border-radius: 20px 20px 0 0;
+}
+.navbar-logo:hover,
+.navbar-link:hover { color: #333; }
+
+/* 활성 탭 */
+.navbar-logo.active,
+.navbar-link.active {
+  color: #333;
+  background: #FAF4EE;
+}
+.navbar-logo.active::before,
+.navbar-link.active::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: -14px;
+  width: 14px; height: 14px;
+  background: transparent;
+  border-bottom-right-radius: 14px;
+  box-shadow: 5px 5px 0 5px #FAF4EE;
+}
+.navbar-logo.active::after,
+.navbar-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; right: -14px;
+  width: 14px; height: 14px;
+  background: transparent;
+  border-bottom-left-radius: 14px;
+  box-shadow: -5px 5px 0 5px #FAF4EE;
 }
 
 /* 메뉴 */
 .navbar-menu {
   display: flex;
-  gap: 32px;
-  align-items: center;
+  align-items: stretch;
+  gap: 4px;
   flex-shrink: 0;
-}
-.navbar-link {
-  font-family: 'Pinkfong Baby SharkOTF', 'Noto Sans KR', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  color: #fff;
-  text-decoration: none;
-  transition: color 0.15s;
-  white-space: nowrap;
-}
-.navbar-link:hover { color: #333; }
-.navbar-link.active { color: #333; }
-
-/* 캘린더 */
-.navbar-calendar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #FFF2D9;
-  border: 2px solid #F8C40E;
-  box-shadow: -3px 3px 0 #F8C40E, 3px 4px 0 #F8C40E;
-  border-radius: 24px;
-  padding: 6px 14px;
-  height: 64px;
-  flex-shrink: 0;
-}
-.cal-arrow {
-  background: none;
-  border: none;
-  font-size: 22px;
-  color: #FFD940;
-  cursor: pointer;
-  font-weight: 900;
-  line-height: 1;
-  padding: 0 2px;
-}
-.cal-days-group {
-  display: flex;
-  gap: 10px;
-}
-.cal-day-item {
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 16px;
-  color: #555;
-  font-weight: 500;
-}
-.cal-today-pill {
-  background: #FFB256;
-  border-radius: 100px;
-  padding: 4px 16px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 44px;
-}
-.cal-date {
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 22px;
-  color: #fff;
-  font-weight: 700;
-}
-.cal-today-day {
-  font-family: 'Noto Sans KR', sans-serif;
-  font-size: 22px;
-  color: #fff;
-  font-weight: 700;
 }
 
-/* 검색 */
-.navbar-search {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  background: #fff;
-  border-radius: 24px;
-  overflow: hidden;
-  border: 2px solid #F8C40E;
-  height: 48px;
-  min-width: 0;
-}
-.navbar-search input {
-  flex: 1;
-  border: none;
-  outline: none;
-  padding: 0 16px;
-  font-size: 15px;
-  background: transparent;
-  color: #333;
-  min-width: 0;
-}
-.navbar-search input::placeholder { color: #bbb; }
-.search-btn {
-  background: none;
-  border: none;
-  padding: 0 14px;
-  font-size: 18px;
-  cursor: pointer;
-  color: #FFB256;
-  flex-shrink: 0;
-}
+/* 오른쪽 여백 채우기 */
+.navbar-spacer { flex: 1; }
 
 /* 유저 */
 .navbar-user {
@@ -142,9 +82,10 @@
   align-items: center;
   gap: 8px;
   background: rgba(255,242,217,0.6);
-  border-radius: 60px;
-  padding: 6px 16px 6px 12px;
-  height: 60px;
+  border-radius: 40px;
+  padding: 4px 14px 4px 10px;
+  height: 46px;
+  align-self: center;
   flex-shrink: 0;
 }
 .user-info {
@@ -154,29 +95,22 @@
 }
 .user-name {
   font-family: 'Pinkfong Baby SharkOTF', 'Noto Sans KR', sans-serif;
-  font-size: 18px;
+  font-size: 15px;
   color: #333;
   font-weight: 600;
   line-height: 1.2;
 }
 .user-type {
-  font-size: 12px;
+  font-size: 11px;
   color: #888;
 }
-.user-avatar {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-}
+.user-avatar { width: 36px; height: 36px; flex-shrink: 0; }
 .avatar-circle {
-  width: 44px;
-  height: 44px;
+  width: 36px; height: 36px;
   border-radius: 50%;
   background: linear-gradient(135deg, #FFD580, #FFB256);
   border: 2px solid #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
 }
 .avatar-circle::after { content: '🐒'; }

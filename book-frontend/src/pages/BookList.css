@@ -1,62 +1,23 @@
 .booklist {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 28px 48px 40px;
+  padding: 20px 48px 40px;
 }
 
-/* 상단 검색 + 탭 */
-.booklist-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-}
-
-.booklist-search {
-  display: flex;
-  gap: 0;
-  background: #fff;
-  border-radius: 24px;
-  border: 2px solid #FFB256;
-  overflow: hidden;
-  height: 44px;
-  min-width: 280px;
-}
-.booklist-search input {
-  flex: 1;
-  padding: 0 16px;
-  border: none;
-  font-size: 14px;
-  outline: none;
-  background: transparent;
-  color: #333;
-}
-.booklist-search input::placeholder { color: #bbb; }
-.booklist-search button {
-  padding: 0 18px;
-  background: #FFB256;
-  color: #fff;
-  border: none;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.booklist-search button:hover { background: #e09a3e; }
-
+/* ── 상단 탭 ── */
 .booklist-tabs {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 .booklist-tab {
-  padding: 7px 18px;
+  padding: 8px 20px;
   border-radius: 20px;
   border: 2px solid #ddd;
   background: #fff;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.15s;
   color: #666;
@@ -65,50 +26,198 @@
 .booklist-tab:hover:not(.active) { border-color: #FFB256; color: #FFB256; }
 .booklist-tab.active { color: #fff; border-color: transparent; }
 
-/* 그리드 */
-.booklist-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 18px;
+/* ── 메인 레이아웃 ── */
+.booklist-layout {
+  display: flex;
+  gap: 20px;
+  align-items: stretch;   /* 사이드바 = 선반 높이 */
+  position: relative;
+  overflow: hidden;
 }
 
-.booklist-count {
-  font-size: 13px;
-  color: #888;
-  margin-bottom: 16px;
-  padding: 0 2px;
+/* 배경 장식 */
+.bl-deco {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.45;
+  z-index: 0;
 }
+.bl-deco-tl { top: -20px; left: -40px; width: 220px; }
+.bl-deco-br { bottom: -20px; right: -20px; width: 260px; }
+
+/* ── 왼쪽 사이드바 ── */
+.booklist-sidebar {
+  position: relative;
+  z-index: 1;
+  width: 170px;
+  flex-shrink: 0;
+  background: rgba(255,253,237,0.95);
+  border: 1px solid rgba(163,55,55,0.12);
+  border-radius: 20px;
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-year {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  border: none;
+  background: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  border-radius: 12px;
+  margin: 2px 8px;
+  transition: background 0.15s;
+}
+.sidebar-year:hover:not(.active) { background: #fff3e0; color: #FFB256; }
+.sidebar-year.active { background: #FFB256; color: #fff; font-weight: 700; }
+.sidebar-arrow { font-size: 16px; font-weight: 900; }
+.year-cnt { font-size: 12px; opacity: 0.7; }
+
+/* ── 오른쪽 책 선반 ── */
+.booklist-shelf-area {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  background: rgba(255,253,237,0.95);
+  border: 1px solid rgba(163,55,55,0.12);
+  border-radius: 20px;
+  padding: 28px 32px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* 선반 한 줄 */
+.shelf-row {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  flex: 1;
+  padding-bottom: 0;
+  gap: 0;
+  margin-bottom: 32px;
+}
+
+/* 판자 — shelf-row 아래 붙임 */
+.shelf-plank {
+  position: absolute;
+  bottom: -32px;
+  left: -32px;
+  right: -32px;
+  height: 32px;
+  overflow: hidden;
+}
+.shelf-plank-img {
+  width: 100%;
+  height: 32px;
+  object-fit: fill;
+}
+
+/* 책 wrap: 제목(위) + 책+버튼(아래) */
+.shelf-book-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+  padding: 0 6px;
+}
+
+/* 책+버튼 가로 묶음 — 바닥이 판자에 딱 맞음 */
+.shelf-book-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+/* 책 이미지 영역 */
+.shelf-book {
+  cursor: pointer;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  width: 110px;
+}
+.shelf-book:hover { transform: translateY(-10px); }
+
+.shelf-book-svg {
+  width: 110px;
+  height: 142px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(-3px 6px 10px rgba(0,0,0,0.2));
+}
+.shelf-book-thumb {
+  width: 110px;
+  height: 142px;
+  object-fit: cover;
+  border-radius: 6px 12px 12px 6px;
+  box-shadow: -4px 6px 14px rgba(0,0,0,0.22);
+}
+
+/* 버튼 — 책 오른쪽 세로 배치, 책 바닥 기준 정렬 */
+.shelf-book-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 4px;
+}
+.shelf-action-btn {
+  width: 44px;
+  height: 28px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s;
+}
+.shelf-action-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.shelf-action-btn:hover { transform: scale(1.12); }
+
+/* 제목 — 책 위, 책 너비 기준 가운데 */
+.shelf-book-title {
+  font-size: 12px;
+  color: #555;
   text-align: center;
-  padding: 80px;
-  color: #bbb;
-  font-size: 16px;
+  width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-bottom: 6px;
 }
-.booklist-loading::before { content: '⏳ '; }
-.booklist-empty::before { content: '📭 '; }
 
 /* 페이지네이션 */
-.booklist-pagination {
+.shelf-pagination {
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-top: 36px;
-  flex-wrap: wrap;
-}
-.page-btn {
-  padding: 7px 13px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  background: #fff;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.15s;
-  color: #555;
-}
-.page-btn.active { background: #FFB256; color: #fff; border-color: #FFB256; font-weight: 700; }
-.page-btn:hover:not(.active) { background: #fff8ee; border-color: #FFB256; }
-
-.booklist-count {
-  font-size: 13px;
+  gap: 12px;
+  padding-top: 12px;
+  font-size: 14px;
   color: #888;
-  margin-bottom: 16px;
+}
+.shelf-pagination button {
+  background: none;
+  border: none;
+  color: #FFB256;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.booklist-loading, .booklist-empty {
+  text-align: center;
+  padding: 60px;
+  color: #bbb;
+  font-size: 16px;
 }
