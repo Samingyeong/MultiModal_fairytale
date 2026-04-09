@@ -1,0 +1,351 @@
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { getVideoUrl, getVttUrl, proxy, lookupDict, analyzeWord, analyzeSentence, type DictItem } from '../api/library'
+import type { Cue } from '../types'
+import './Reader.css'
+
+const LANGS = [
+  { code: 'ko', label: '한국어' },
+  { code: 'en', label: 'English' },
+  { code: 'vi', label: 'Tiếng Việt' },
+  { code: 'ch', label: '中文' },
+  { code: 'th', label: 'ภาษาไทย' },
+  { code: 'mo', label: 'Монгол' },
+]
+
+// ─── VTT 파싱 ────────────────────────────────────────────────
+function parseVtt(text: string): Cue[] {
+  const lines = text.replace(/\r/g, '').split('\n')
+  const result: Cue[] = []
+  let i = 0
+  while (i < lines.length) {
+    if (lines[i].includes('-->')) {
+      const [s, e] = lines[i].split('-->')
+      const start = timeToSec(s.trim()), end = timeToSec(e.trim())
+      const textLines: string[] = []
+      i++
+      while (i < lines.length && lines[i].trim()) { textLines.push(lines[i]); i++ }
+      if (textLines.length) result.push({ start, end, text: textLines.join(' ') })
+    }
+    i++
+  }
+  return result
+}
+
+function timeToSec(t: string): number {
+  const p = t.split(':')
+  return p.length === 3 ? +p[0] * 3600 + +p[1] * 60 + parseFloat(p[2]) : +p[0] * 60 + parseFloat(p[1])
+}
+function secToTime(s: number): string {
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`
+}
+
+export default function Reader() {
+  const [params] = useSearchParams()
+  const navigate = useNavigate()
+
+  const thumb     = params.get('thumb')     || ''
+  const nlcyThumb = params.get('nlcyThumb') || thumb
+  const title     = params.get('title')     || ''
+  const storyUrl  = params.get('url')       || ''
+
+  const [lang, setLang] = useState('ko')
+  const [mode, setMode] = useState<'book' | 'watch'>('book')
+  const [cues, setCues] = useState<Cue[]>([])
+  const [activeCue, setActiveCue] = useState(-1)
+  const [subtitleLoading, setSubtitleLoading] = useState(false)
+  const [videoError, setVideoError] = useState(false)
+
+  // 단어 패널
+  const [wordPanel, setWordPanel] = useState<{ word: string; items: DictItem[] | null } | null>(null)
+
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const guideCanvasRef = useRef<HTMLCanvasElement>(null)
+  const inputCanvasRef = useRef<HTMLCanvasElement>(null)
+  const activeCueRef = useRef<HTMLDivElement>(null)
+
+  // ─── 자막 로드 ──────────────────────────────────────────────
+  const loadSubtitles = useCallback(async (l: string) => {
+    setSubtitleLoading(true)
+    setCues([])
+    try {
+      const res = await fetch(getVttUrl(nlcyThumb, l))
+      if (!res.ok) throw new Error()
+      const text = await res.text()
+      setCues(parseVtt(text))
+    } catch {
+      setCues([])
+    } finally {
+      setSubtitleLoading(false)
+    }
+  }, [nlcyThumb])
+
+  useEffect(() => {
+    if (mode === 'book') loadSubtitles(lang)
+  }, [lang, mode, loadSubtitles])
+
+  // ─── 자막 싱크 ──────────────────────────────────────────────
+  function handleTimeUpdate() {
+    const v = videoRef.current
+    if (!v || !cues.length) return
+    const t = v.currentTime
+    const idx = cues.findIndex(c => t >= c.start && t <= c.end)
+    setActiveCue(idx)
+  }
+
+  useEffect(() => {
+    activeCueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [activeCue])
+
+  // ─── 언어 변경 ──────────────────────────────────────────────
+  function changeLang(l: string) {
+    setLang(l)
+    setVideoError(false)
+    // video src 교체
+    const v = videoRef.current
+    if (v) {
+      const t = v.currentTime
+      v.src = getVideoUrl(nlcyThumb, l)
+      v.load()
+      v.currentTime = t
+      v.play().catch(() => {})
+    }
+  }
+
+  // ─── 단어 클릭 ──────────────────────────────────────────────
+  async function openWord(word: string, sentenceContext?: string) {
+    setWordPanel({ word, items: null })
+    drawGuide(word)
+
+    let searchWord = word
+    try {
+      // 문장 전체 컨텍스트가 있으면 문장 분석으로 기본형 추출 (더 정확)
+      if (sentenceContext) {
+        const result = await analyzeSentence(sentenceContext)
+        const match = result.keywords.find(k =>
+          sentenceContext.includes(word) &&
+          (k.form === word || word.startsWith(k.form) || k.form.startsWith(word.slice(0, 2)))
+        )
+        if (match && match.form !== word) {
+          searchWord = match.form
+        }
+      }
+      // 컨텍스트 없거나 매칭 실패 시 단어 단독 분석
+      if (searchWord === word) {
+        const tokens = await analyzeWord(word)
+        if (tokens.length > 0 && tokens[0].form !== word) {
+          searchWord = tokens[0].form
+        }
+      }
+    } catch {}
+
+    const items = await lookupDict(searchWord)
+    setWordPanel({ word, items })
+  }
+
+  // ─── 따라쓰기 캔버스 ────────────────────────────────────────
+  function drawGuide(word: string) {
+    const ctx = guideCanvasRef.current?.getContext('2d')
+    if (!ctx) return
+    ctx.clearRect(0, 0, 360, 100)
+    ctx.font = 'bold 56px sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = '#ccc'
+    ctx.fillText(word.length > 5 ? word.slice(0, 5) + '…' : word, 180, 50)
+    clearInput()
+  }
+
+  function clearInput() {
+    inputCanvasRef.current?.getContext('2d')?.clearRect(0, 0, 360, 100)
+  }
+
+  // 드로잉
+  const drawing = useRef(false)
+  function onPointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
+    drawing.current = true
+    const ctx = inputCanvasRef.current?.getContext('2d')
+    if (!ctx) return
+    const r = (e.target as HTMLCanvasElement).getBoundingClientRect()
+    ctx.beginPath()
+    ctx.moveTo(e.clientX - r.left, e.clientY - r.top)
+  }
+  function onPointerMove(e: React.PointerEvent<HTMLCanvasElement>) {
+    if (!drawing.current) return
+    const ctx = inputCanvasRef.current?.getContext('2d')
+    if (!ctx) return
+    const r = (e.target as HTMLCanvasElement).getBoundingClientRect()
+    ctx.lineTo(e.clientX - r.left, e.clientY - r.top)
+    ctx.strokeStyle = '#FFB256'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke()
+  }
+  function onPointerUp() { drawing.current = false }
+
+  // ─── 렌더 ───────────────────────────────────────────────────
+  const videoSrc = getVideoUrl(nlcyThumb, lang)
+  const thumbSrc = proxy(thumb)
+
+  return (
+    <div className="reader">
+      {/* 상단 바 */}
+      <div className="reader-topbar">
+        <button className="reader-back" onClick={() => navigate(-1)}>← 목록</button>
+        <span className="reader-title">{title}</span>
+        <div className="reader-lang-bar">
+          {LANGS.map(l => (
+            <button
+              key={l.code}
+              className={`reader-lang-btn ${l.code === lang ? 'active' : ''}`}
+              onClick={() => changeLang(l.code)}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 모드 탭 */}
+      <div className="reader-mode-tabs">
+        <button className={`mode-tab ${mode === 'book' ? 'active' : ''}`} onClick={() => setMode('book')}>
+          📖 책으로 읽기
+        </button>
+        <button className={`mode-tab ${mode === 'watch' ? 'active' : ''}`} onClick={() => setMode('watch')}>
+          🎬 영상만 보기
+        </button>
+      </div>
+
+      {/* 책 모드 */}
+      {mode === 'book' && (
+        <div className="reader-book-mode">
+          {/* 왼쪽: 영상 */}
+          <div className="reader-page reader-page-left">
+            {videoError ? (
+              <div className="reader-video-error">
+                <img src={thumbSrc} alt={title} onError={e => (e.currentTarget.style.display = 'none')} />
+                <p>이 동화의 영상은 원본 서버에서 제공되지 않아요.</p>
+                {storyUrl && (
+                  <a href={storyUrl} target="_blank" rel="noreferrer">🔗 원본 사이트에서 보기</a>
+                )}
+              </div>
+            ) : (
+              <video
+                ref={videoRef}
+                key={`${thumb}-${lang}`}
+                controls
+                src={videoSrc}
+                poster={thumbSrc}
+                className="reader-video"
+                onTimeUpdate={handleTimeUpdate}
+                onError={() => setVideoError(true)}
+                onContextMenu={e => e.preventDefault()}
+              />
+            )}
+          </div>
+
+          {/* 오른쪽: 자막 */}
+          <div className="reader-page reader-page-right">
+            <div className="reader-page-header">📝 이야기</div>
+            <div className="reader-subtitle-list">
+              {subtitleLoading && <p className="reader-loading">자막을 불러오는 중...</p>}
+              {!subtitleLoading && cues.length === 0 && (
+                <p className="reader-loading">이 언어의 자막이 없어요.</p>
+              )}
+              {cues.map((cue, idx) => (
+                <div
+                  key={idx}
+                  className={`reader-cue ${idx === activeCue ? 'active' : ''}`}
+                  ref={idx === activeCue ? activeCueRef : null}
+                >
+                  <span
+                    className="reader-cue-time"
+                    onClick={() => { if (videoRef.current) videoRef.current.currentTime = cue.start }}
+                  >
+                    {secToTime(cue.start)}
+                  </span>
+                  <span className="reader-cue-text">
+                    {cue.text.split(/(\s+)/).map((w, i) =>
+                      w.trim()
+                        ? <span key={i} className="reader-word" onClick={() => openWord(w.trim(), cue.text)}>{w}</span>
+                        : w
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 영상 모드 */}
+      {mode === 'watch' && (
+        <div className="reader-watch-mode">
+          {videoError ? (
+            <div className="reader-video-error">
+              <p>영상을 불러올 수 없어요.</p>
+              {storyUrl && <a href={storyUrl} target="_blank" rel="noreferrer">🔗 원본 사이트에서 보기</a>}
+            </div>
+          ) : (
+            <video
+              controls
+              src={videoSrc}
+              poster={thumbSrc}
+              className="reader-video-full"
+              onError={() => setVideoError(true)}
+              onContextMenu={e => e.preventDefault()}
+            />
+          )}
+        </div>
+      )}
+
+      {/* 단어 사이드 패널 */}
+      {wordPanel && (
+        <div className="reader-word-panel">
+          <div className="word-panel-inner">
+            <button className="word-panel-close" onClick={() => setWordPanel(null)}>✕</button>
+
+            {wordPanel.items === null ? (
+              <p className="word-panel-loading">검색 중...</p>
+            ) : wordPanel.items.length === 0 ? (
+              <>
+                <div className="dict-word">{wordPanel.word}</div>
+                <p className="dict-empty">사전에서 찾을 수 없어요.</p>
+              </>
+            ) : (() => {
+              const exact = wordPanel.items.find(i => i.word === wordPanel.word) || wordPanel.items[0]
+              return (
+                <>
+                  <div className="dict-word">
+                    {exact.word}
+                    {exact.grade && <span className={`dict-grade grade-${exact.grade}`}>{exact.grade}</span>}
+                  </div>
+                  {exact.pos && <div className="dict-meta">{exact.pos}</div>}
+                  <hr className="dict-divider" />
+                  {exact.definitions.map((d, i) => (
+                    <div key={i} className="dict-def">
+                      <span className="dict-def-num">{i + 1}</span>
+                      <span className="dict-def-text">{d}</span>
+                    </div>
+                  ))}
+                </>
+              )
+            })()}
+
+            {/* 따라쓰기 */}
+            <div className="write-section">
+              <div className="write-label">✏️ 따라 써보기</div>
+              <div className="canvas-wrap">
+                <canvas ref={guideCanvasRef} width={360} height={100} className="guide-canvas" />
+                <canvas
+                  ref={inputCanvasRef} width={360} height={100} className="input-canvas"
+                  onPointerDown={onPointerDown}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}
+                />
+              </div>
+              <button className="clear-btn" onClick={clearInput}>다시 쓰기</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

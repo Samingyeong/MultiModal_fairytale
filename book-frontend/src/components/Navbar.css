@@ -1,0 +1,182 @@
+.navbar {
+  width: 100%;
+  background: #FFB256;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.navbar-inner {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* 로고 */
+.navbar-logo {
+  font-family: 'Pinkfong Baby SharkOTF', 'Noto Sans KR', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #333;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 메뉴 */
+.navbar-menu {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.navbar-link {
+  font-family: 'Pinkfong Baby SharkOTF', 'Noto Sans KR', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+.navbar-link:hover { color: #333; }
+.navbar-link.active { color: #333; }
+
+/* 캘린더 */
+.navbar-calendar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFF2D9;
+  border: 2px solid #F8C40E;
+  box-shadow: -3px 3px 0 #F8C40E, 3px 4px 0 #F8C40E;
+  border-radius: 24px;
+  padding: 6px 14px;
+  height: 64px;
+  flex-shrink: 0;
+}
+.cal-arrow {
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: #FFD940;
+  cursor: pointer;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0 2px;
+}
+.cal-days-group {
+  display: flex;
+  gap: 10px;
+}
+.cal-day-item {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 16px;
+  color: #555;
+  font-weight: 500;
+}
+.cal-today-pill {
+  background: #FFB256;
+  border-radius: 100px;
+  padding: 4px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+}
+.cal-date {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 22px;
+  color: #fff;
+  font-weight: 700;
+}
+.cal-today-day {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 22px;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* 검색 */
+.navbar-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 2px solid #F8C40E;
+  height: 48px;
+  min-width: 0;
+}
+.navbar-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0 16px;
+  font-size: 15px;
+  background: transparent;
+  color: #333;
+  min-width: 0;
+}
+.navbar-search input::placeholder { color: #bbb; }
+.search-btn {
+  background: none;
+  border: none;
+  padding: 0 14px;
+  font-size: 18px;
+  cursor: pointer;
+  color: #FFB256;
+  flex-shrink: 0;
+}
+
+/* 유저 */
+.navbar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,242,217,0.6);
+  border-radius: 60px;
+  padding: 6px 16px 6px 12px;
+  height: 60px;
+  flex-shrink: 0;
+}
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.user-name {
+  font-family: 'Pinkfong Baby SharkOTF', 'Noto Sans KR', sans-serif;
+  font-size: 18px;
+  color: #333;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.user-type {
+  font-size: 12px;
+  color: #888;
+}
+.user-avatar {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.avatar-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FFD580, #FFB256);
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+.avatar-circle::after { content: '🐒'; }

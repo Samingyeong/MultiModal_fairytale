@@ -1,0 +1,114 @@
+.booklist {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 28px 48px 40px;
+}
+
+/* 상단 검색 + 탭 */
+.booklist-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.booklist-search {
+  display: flex;
+  gap: 0;
+  background: #fff;
+  border-radius: 24px;
+  border: 2px solid #FFB256;
+  overflow: hidden;
+  height: 44px;
+  min-width: 280px;
+}
+.booklist-search input {
+  flex: 1;
+  padding: 0 16px;
+  border: none;
+  font-size: 14px;
+  outline: none;
+  background: transparent;
+  color: #333;
+}
+.booklist-search input::placeholder { color: #bbb; }
+.booklist-search button {
+  padding: 0 18px;
+  background: #FFB256;
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.booklist-search button:hover { background: #e09a3e; }
+
+.booklist-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.booklist-tab {
+  padding: 7px 18px;
+  border-radius: 20px;
+  border: 2px solid #ddd;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: #666;
+  white-space: nowrap;
+}
+.booklist-tab:hover:not(.active) { border-color: #FFB256; color: #FFB256; }
+.booklist-tab.active { color: #fff; border-color: transparent; }
+
+/* 그리드 */
+.booklist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 18px;
+}
+
+.booklist-count {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 16px;
+  padding: 0 2px;
+}
+  text-align: center;
+  padding: 80px;
+  color: #bbb;
+  font-size: 16px;
+}
+.booklist-loading::before { content: '⏳ '; }
+.booklist-empty::before { content: '📭 '; }
+
+/* 페이지네이션 */
+.booklist-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 36px;
+  flex-wrap: wrap;
+}
+.page-btn {
+  padding: 7px 13px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+  color: #555;
+}
+.page-btn.active { background: #FFB256; color: #fff; border-color: #FFB256; font-weight: 700; }
+.page-btn:hover:not(.active) { background: #fff8ee; border-color: #FFB256; }
+
+.booklist-count {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 16px;
+}
