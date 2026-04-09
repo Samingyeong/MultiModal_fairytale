@@ -79,7 +79,36 @@ export function getVttUrl(thumbnail: string, lang = 'ko') {
   return `/proxy?url=${encodeURIComponent(base.replace('.png', `_${lang}.vtt`))}`
 }
 
-// ─── 형태소 분석 ─────────────────────────────────────────────
+// ─── 단어 학습 ───────────────────────────────────────────────
+export interface StudyWord {
+  id: number; word: string; base_form: string; pos: string
+  definition: string; known: number; from_book: string; created_at: string
+}
+
+export async function saveWord(data: {
+  word: string; base_form: string; pos?: string
+  definition?: string; known: number; from_book?: string
+}) {
+  await fetch(`${BASE}/api/words`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+}
+
+export async function fetchStudyWords(known?: 0 | 1): Promise<StudyWord[]> {
+  const q = known !== undefined ? `?known=${known}` : ''
+  const res = await fetch(`${BASE}/api/words${q}`)
+  return res.json()
+}
+
+export async function updateWordKnown(id: number, known: number) {
+  await fetch(`${BASE}/api/words/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ known }),
+  })
+}
 export interface MorphToken { form: string; tag: string }
 export interface MorphResult { text: string; keywords: (MorphToken & { start: number; len: number })[]; count: number }
 

@@ -1,6 +1,6 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai')
 
-const GEMINI_KEY = process.env.GEMINI_API_KEY || 'AIzaSyCY0bDv7681nW2QLzAKQw7tHyhg9ZDr4fU'
+const GEMINI_KEY = process.env.GEMINI_API_KEY
 const genAI = new GoogleGenerativeAI(GEMINI_KEY)
 const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' })
 

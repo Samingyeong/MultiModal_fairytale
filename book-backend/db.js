@@ -42,6 +42,18 @@ db.exec(`
     count      INTEGER,
     status     TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS word_study (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    word       TEXT NOT NULL,
+    base_form  TEXT NOT NULL,
+    pos        TEXT,
+    definition TEXT,
+    known      INTEGER DEFAULT 0,
+    from_book  TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(base_form)
+  );
 `)
 
 // ─── 쿼리 헬퍼 ───────────────────────────────────────────────

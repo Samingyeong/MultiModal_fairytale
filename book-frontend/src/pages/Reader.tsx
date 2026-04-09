@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { getVideoUrl, getVttUrl, proxy, lookupDict, analyzeWord, analyzeSentence, analyzeBatch, type DictItem } from '../api/library'
+import { getVideoUrl, getVttUrl, proxy, lookupDict, analyzeWord, analyzeSentence, analyzeBatch, saveWord, type DictItem } from '../api/library'
 import type { Cue } from '../types'
 import './Reader.css'
 
@@ -57,7 +57,12 @@ export default function Reader() {
   const [videoError, setVideoError] = useState(false)
 
   // 단어 패널
-  const [wordPanel, setWordPanel] = useState<{ word: string; items: DictItem[] | null } | null>(null)
+  const [wordPanel, setWordPanel] = useState<{
+    word: string
+    baseForm: string
+    items: DictItem[] | null
+    writeMode: 'none' | 'guided' | 'free'  // 따라쓰기 모드
+  } | null>(null)
 
   // 사전 결과 프리캐시 (자막 로드 시 미리 분석)
   const morphCacheRef = useRef<Map<string, { form: string; tag: string }[]>>(new Map())
@@ -159,7 +164,7 @@ export default function Reader() {
 
     // 1. 사전 캐시에서 먼저 확인 (프리캐시된 경우 즉시 반환)
     if (dictCacheRef.current.has(word)) {
-      return setWordPanel({ word, items: dictCacheRef.current.get(word)! })
+      return setWordPanel({ word, baseForm: word, items: dictCacheRef.current.get(word)!, writeMode: 'none' })
     }
 
     try {
@@ -186,13 +191,13 @@ export default function Reader() {
 
     // 3. 캐시된 사전 결과 확인
     if (dictCacheRef.current.has(searchWord)) {
-      return setWordPanel({ word, items: dictCacheRef.current.get(searchWord)! })
+      return setWordPanel({ word, baseForm: searchWord, items: dictCacheRef.current.get(searchWord)!, writeMode: 'none' })
     }
 
     // 4. 사전 API 호출
     const items = await lookupDict(searchWord)
     dictCacheRef.current.set(searchWord, items)
-    setWordPanel({ word, items })
+    setWordPanel({ word, baseForm: searchWord, items, writeMode: 'none' })
   }
 
   // ─── 따라쓰기 캔버스 ────────────────────────────────────────
@@ -356,45 +361,96 @@ export default function Reader() {
 
             {wordPanel.items === null ? (
               <p className="word-panel-loading">검색 중...</p>
-            ) : wordPanel.items.length === 0 ? (
-              <>
-                <div className="dict-word">{wordPanel.word}</div>
-                <p className="dict-empty">사전에서 찾을 수 없어요.</p>
-              </>
             ) : (() => {
-              const exact = wordPanel.items.find(i => i.word === wordPanel.word) || wordPanel.items[0]
+              const items = wordPanel.items
+              const exact = items.length > 0
+                ? (items.find(i => i.word === wordPanel.baseForm) || items[0])
+                : null
+              const firstDef = exact?.definitions[0] || ''
+
               return (
                 <>
+                  {/* 단어 + 등급 */}
                   <div className="dict-word">
-                    {exact.word}
-                    {exact.grade && <span className={`dict-grade grade-${exact.grade}`}>{exact.grade}</span>}
+                    {wordPanel.baseForm || wordPanel.word}
+                    {exact?.grade && <span className={`dict-grade grade-${exact.grade}`}>{exact.grade}</span>}
                   </div>
-                  {exact.pos && <div className="dict-meta">{exact.pos}</div>}
+                  {exact?.pos && <div className="dict-meta">{exact.pos}</div>}
+
+                  {/* 알아요 / 몰라요 버튼 */}
+                  <div className="word-know-btns">
+                    <button className="know-btn know-yes" onClick={() => {
+                      saveWord({ word: wordPanel.word, base_form: wordPanel.baseForm, pos: exact?.pos, definition: firstDef, known: 1, from_book: title })
+                    }}>✅ 알아요</button>
+                    <button className="know-btn know-no" onClick={() => {
+                      saveWord({ word: wordPanel.word, base_form: wordPanel.baseForm, pos: exact?.pos, definition: firstDef, known: 0, from_book: title })
+                    }}>❓ 몰라요</button>
+                  </div>
+
                   <hr className="dict-divider" />
-                  {exact.definitions.map((d, i) => (
-                    <div key={i} className="dict-def">
-                      <span className="dict-def-num">{i + 1}</span>
-                      <span className="dict-def-text">{d}</span>
+
+                  {items.length === 0 ? (
+                    <p className="dict-empty">사전에서 찾을 수 없어요.</p>
+                  ) : (
+                    exact?.definitions.map((d, i) => (
+                      <div key={i} className="dict-def">
+                        <span className="dict-def-num">{i + 1}</span>
+                        <span className="dict-def-text">{d}</span>
+                      </div>
+                    ))
+                  )}
+
+                  {/* 따라쓰기 */}
+                  <div className="write-section">
+                    <div className="write-label-row">
+                      <span>✏️ 따라 써보기</span>
+                      <div className="write-mode-btns">
+                        <button
+                          className={`write-mode-btn ${wordPanel.writeMode === 'guided' ? 'active' : ''}`}
+                          onClick={() => {
+                            setWordPanel(p => p ? { ...p, writeMode: p.writeMode === 'guided' ? 'none' : 'guided' } : p)
+                            drawGuide(wordPanel.baseForm || wordPanel.word)
+                          }}
+                        >가이드</button>
+                        <button
+                          className={`write-mode-btn ${wordPanel.writeMode === 'free' ? 'active' : ''}`}
+                          onClick={() => {
+                            setWordPanel(p => p ? { ...p, writeMode: p.writeMode === 'free' ? 'none' : 'free' } : p)
+                            clearInput()
+                          }}
+                        >빈칸</button>
+                      </div>
                     </div>
-                  ))}
+
+                    {wordPanel.writeMode !== 'none' && (
+                      <div className="canvas-wrap">
+                        {/* 가이드 모드: 회색 글자 배경 */}
+                        {wordPanel.writeMode === 'guided' && (
+                          <canvas ref={guideCanvasRef} width={360} height={100} className="guide-canvas" />
+                        )}
+                        {/* 빈칸 모드: 격자만 */}
+                        {wordPanel.writeMode === 'free' && (
+                          <div className="free-grid">
+                            {(wordPanel.baseForm || wordPanel.word).split('').map((_, i) => (
+                              <div key={i} className="free-cell" />
+                            ))}
+                          </div>
+                        )}
+                        <canvas
+                          ref={inputCanvasRef} width={360} height={100} className="input-canvas"
+                          onPointerDown={onPointerDown}
+                          onPointerMove={onPointerMove}
+                          onPointerUp={onPointerUp}
+                        />
+                      </div>
+                    )}
+                    {wordPanel.writeMode !== 'none' && (
+                      <button className="clear-btn" onClick={clearInput}>다시 쓰기</button>
+                    )}
+                  </div>
                 </>
               )
             })()}
-
-            {/* 따라쓰기 */}
-            <div className="write-section">
-              <div className="write-label">✏️ 따라 써보기</div>
-              <div className="canvas-wrap">
-                <canvas ref={guideCanvasRef} width={360} height={100} className="guide-canvas" />
-                <canvas
-                  ref={inputCanvasRef} width={360} height={100} className="input-canvas"
-                  onPointerDown={onPointerDown}
-                  onPointerMove={onPointerMove}
-                  onPointerUp={onPointerUp}
-                />
-              </div>
-              <button className="clear-btn" onClick={clearInput}>다시 쓰기</button>
-            </div>
           </div>
         </div>
       )}

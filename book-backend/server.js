@@ -8,85 +8,14 @@ const { spawn } = require('child_process')
 const { db, IMG_DIR }        = require('./db')
 const { syncBooks }          = require('./sync')
 const { downloadAllImages }  = require('./images')
+const { extractKeywords, getBaseForm } = require('./groq_nlp')
 
 const app  = express()
 const PORT = 4000
-const NLP_SCRIPT = path.join(__dirname, 'korean_nlp.py')
-
-// ─── Python 상주 프로세스 (매번 시작 오버헤드 제거) ──────────
-let pyProcess = null
-let pyBuffer  = ''
-let pyResolvers = []  // [{resolve, reject, id}]
-let reqId = 0
-
-function startPython() {
-  pyProcess = spawn('python', ['-u', '-c', `
-import sys, json
-sys.path.insert(0, r'${__dirname.replace(/\\/g, '\\\\')}')
-from korean_nlp import analyze_sentence, analyze_word
-for line in sys.stdin:
-    line = line.strip()
-    if not line: continue
-    try:
-        obj = json.loads(line)
-        mode = obj.get('mode','sentence')
-        text = obj.get('text','')
-        rid  = obj.get('id', 0)
-        if mode == 'word':
-            result = analyze_word(text)
-        else:
-            result = analyze_sentence(text)
-        print(json.dumps({'id': rid, 'result': result}), flush=True)
-    except Exception as e:
-        print(json.dumps({'id': obj.get('id',0), 'error': str(e)}), flush=True)
-`], { env: { ...process.env, PYTHONIOENCODING: 'utf-8' } })
-
-  pyProcess.stdout.on('data', data => {
-    pyBuffer += data.toString()
-    const lines = pyBuffer.split('\n')
-    pyBuffer = lines.pop()
-    for (const line of lines) {
-      if (!line.trim()) continue
-      try {
-        const { id, result, error } = JSON.parse(line)
-        const idx = pyResolvers.findIndex(r => r.id === id)
-        if (idx >= 0) {
-          const [{ resolve, reject }] = pyResolvers.splice(idx, 1)
-          error ? reject(new Error(error)) : resolve(result)
-        }
-      } catch {}
-    }
-  })
-
-  pyProcess.on('close', () => {
-    console.log('[nlp] Python 프로세스 종료, 재시작...')
-    pyProcess = null
-    setTimeout(startPython, 1000)
-  })
-
-  pyProcess.on('error', e => console.error('[nlp] 프로세스 오류:', e.message))
-  console.log('[nlp] Python 상주 프로세스 시작')
-}
-
-function runNlp(mode, text) {
-  return new Promise((resolve, reject) => {
-    if (!pyProcess) return reject(new Error('Python process not ready'))
-    const id = ++reqId
-    pyResolvers.push({ id, resolve, reject })
-    pyProcess.stdin.write(JSON.stringify({ id, mode, text }) + '\n')
-    setTimeout(() => {
-      const idx = pyResolvers.findIndex(r => r.id === id)
-      if (idx >= 0) {
-        pyResolvers.splice(idx, 1)
-        reject(new Error('timeout'))
-      }
-    }, 10000)
-  })
-}
 
 // ─── 사전 결과 서버 캐시 ──────────────────────────────────────
-const nlpCache  = new Map()  // text → result
-const dictCache = new Map()  // word → items
+const nlpCache  = new Map()
+const dictCache = new Map()
 
 app.use(cors())
 app.use(express.json())
@@ -170,15 +99,21 @@ app.get('/proxy', (req, res) => {
   // MP4 스트리밍
   const headers = { ...NLCY_HEADERS }
   if (req.headers.range) headers['Range'] = req.headers.range
-  https.get(target, { headers }, r => {
-    res.writeHead(r.statusCode, {
-      'Content-Type':   'video/mp4',
-      'Content-Length': r.headers['content-length'] || '',
-      'Content-Range':  r.headers['content-range']  || '',
-      'Accept-Ranges':  'bytes',
-    })
+  const proxyReq = https.get(target, { headers }, r => {
+    if (!res.headersSent) {
+      res.writeHead(r.statusCode, {
+        'Content-Type':   'video/mp4',
+        'Content-Length': r.headers['content-length'] || '',
+        'Content-Range':  r.headers['content-range']  || '',
+        'Accept-Ranges':  'bytes',
+      })
+    }
     r.pipe(res)
-  }).on('error', e => res.status(502).send(e.message))
+    r.on('error', () => { if (!res.headersSent) res.status(502).end() })
+  })
+  proxyReq.on('error', e => { if (!res.headersSent) res.status(502).send(e.message) })
+  // 클라이언트가 연결 끊으면 upstream도 중단
+  req.on('close', () => proxyReq.destroy())
 })
 
 // ─── 형태소 분석 (korean_nlp.py 상주 프로세스) ───────────────
@@ -216,8 +151,46 @@ app.post('/api/morpheme/batch', async (req, res) => {
   }
 })
 
+// ─── 단어 학습 API ────────────────────────────────────────────
+// POST /api/words  { word, base_form, pos, definition, known, from_book }
+app.post('/api/words', (req, res) => {
+  const { word, base_form, pos, definition, known = 0, from_book = '' } = req.body
+  if (!base_form) return res.status(400).json({ error: 'base_form required' })
+  db.prepare(`
+    INSERT INTO word_study (word, base_form, pos, definition, known, from_book)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(base_form) DO UPDATE SET
+      known = excluded.known,
+      definition = excluded.definition
+  `).run(word || base_form, base_form, pos || '', definition || '', known, from_book)
+  res.json({ ok: true })
+})
+
+// GET /api/words?known=0|1|all
+app.get('/api/words', (req, res) => {
+  const { known } = req.query
+  let rows
+  if (known === '0')      rows = db.prepare(`SELECT * FROM word_study WHERE known=0 ORDER BY created_at DESC`).all()
+  else if (known === '1') rows = db.prepare(`SELECT * FROM word_study WHERE known=1 ORDER BY created_at DESC`).all()
+  else                    rows = db.prepare(`SELECT * FROM word_study ORDER BY created_at DESC`).all()
+  res.json(rows)
+})
+
+// PATCH /api/words/:id  { known }
+app.patch('/api/words/:id', (req, res) => {
+  const { known } = req.body
+  db.prepare(`UPDATE word_study SET known=? WHERE id=?`).run(known, req.params.id)
+  res.json({ ok: true })
+})
+
+// DELETE /api/words/:id
+app.delete('/api/words/:id', (req, res) => {
+  db.prepare(`DELETE FROM word_study WHERE id=?`).run(req.params.id)
+  res.json({ ok: true })
+})
+
 // ─── 한국어사전 (캐시 포함) ───────────────────────────────────
-const KRDICT_KEY = process.env.KRDICT_API_KEY || '7C7752C49997907B4BDCB176729D802B'
+const KRDICT_KEY = process.env.KRDICT_API_KEY
 
 app.get('/dict', async (req, res) => {
   const q = req.query.q
@@ -244,6 +217,39 @@ app.get('/dict', async (req, res) => {
     res.json(items)
   } catch { res.json([]) }
 })
+
+// ─── Python NLP 프로세스 ──────────────────────────────────────
+const NLP_SCRIPT = path.join(__dirname, 'korean_nlp.py')
+
+function runNlp(mode, text) {
+  return new Promise((resolve, reject) => {
+    const py = spawn('python', [NLP_SCRIPT, mode, text], {
+      timeout: 10000,
+      env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' },
+    })
+    const chunks = []
+    py.stdout.setEncoding('utf8')
+    py.stdout.on('data', d => chunks.push(d))
+    py.stderr.on('data', d => console.error('[nlp stderr]', d.toString()))
+    py.on('close', code => {
+      try {
+        resolve(JSON.parse(chunks.join('')))
+      } catch (e) {
+        reject(new Error('NLP parse error'))
+      }
+    })
+    py.on('error', reject)
+  })
+}
+
+function startPython() {
+  // python 실행 가능 여부 확인 (상주 프로세스 없이 per-request spawn 방식)
+  const py = spawn('python', ['--version'])
+  py.on('error', () => console.warn('[nlp] python을 찾을 수 없습니다. 형태소 분석 기능이 비활성화됩니다.'))
+  py.on('close', code => {
+    if (code === 0) console.log('[nlp] Python 사용 가능 — 형태소 분석 준비 완료')
+  })
+}
 
 // ─── 수동 동기화 ──────────────────────────────────────────────
 app.post('/admin/sync', async (req, res) => {

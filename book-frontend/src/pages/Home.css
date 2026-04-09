@@ -89,51 +89,17 @@
 }
 .cat-book:hover { transform: translateY(-6px); }
 
-.cat-book-3d {
-  position: relative;
+/* 책 SVG 이미지 */
+.cat-book-svg {
   width: 100px;
   height: 130px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+  transition: filter 0.2s;
 }
-
-.book-spine-side {
-  position: absolute;
-  left: 0; top: 0;
-  width: 18px;
-  height: 100%;
-  background: var(--spine);
-  border-radius: 16px 0 0 0;
-}
-.book-front {
-  position: absolute;
-  left: 18px; top: 0;
-  right: 0; bottom: 0;
-  background: var(--cover);
-  border-radius: 0 10px 4px 0;
-}
-.book-bottom-strip {
-  position: absolute;
-  left: 0; bottom: 0;
-  width: 100%;
-  height: 28px;
-  background: var(--bottom);
-  border-radius: 0 0 4px 0;
-}
-.book-page-strip {
-  position: absolute;
-  left: 18px;
-  bottom: 0;
-  right: 0;
-  height: 18px;
-  background: #FFFAF0;
-  box-shadow: inset 0 1px 2px rgba(224,218,208,0.3);
-}
-.book-bookmark {
-  position: absolute;
-  right: 10px;
-  bottom: 0;
-  width: 11px;
-  height: 26px;
-  background: #FFDE71;
+.cat-book:hover .cat-book-svg {
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.25));
 }
 
 .cat-label {
@@ -169,27 +135,14 @@
 
 .best-badge {
   position: absolute;
-  top: -16px;
-  left: 24px;
+  top: -20px;
+  left: 20px;
   z-index: 2;
 }
-.best-star {
-  width: 80px;
-  height: 80px;
-  background: #FFD502;
-  clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-.best-star span {
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 800;
-  color: #333;
-  line-height: 1.2;
+.best-badge-img {
+  width: 88px;
+  height: auto;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
 }
 
 /* 큰 책 */
@@ -198,60 +151,32 @@
   flex-shrink: 0;
   margin-top: 24px;
 }
-.featured-book-3d {
-  position: relative;
+.featured-book-svg {
   width: 180px;
-  height: 240px;
+  height: 232px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(-6px 6px 16px rgba(0,0,0,0.25));
 }
-.fb-spine {
-  position: absolute;
-  left: 0; top: 0;
-  width: 32px;
-  height: 100%;
-  background: #CE5656;
-  border-radius: 40px 0 0 0;
-}
-.fb-cover {
-  position: absolute;
-  left: 32px; top: 0;
-  right: 0; bottom: 0;
-  background: #F16F6F;
-  border-radius: 0 12px 4px 0;
-}
-.fb-bottom {
-  position: absolute;
-  left: 0; bottom: 0;
-  width: 100%;
-  height: 52px;
-  background: #AB4444;
-  border-radius: 0 0 4px 0;
-}
-.fb-pages {
-  position: absolute;
-  left: 32px; bottom: 0;
-  right: 0;
-  height: 32px;
-  background: #FFFAF0;
-  box-shadow: inset 0 2px 4px rgba(224,218,208,0.3);
-}
-.fb-bookmark {
-  position: absolute;
-  right: 16px; bottom: 0;
-  width: 18px;
-  height: 52px;
-  background: #FFDE71;
+.featured-book-img {
+  width: 180px;
+  height: 232px;
+  object-fit: cover;
+  border-radius: 4px 12px 12px 4px;
+  box-shadow: -6px 6px 16px rgba(0,0,0,0.25);
 }
 .featured-book-title-overlay {
   position: absolute;
-  bottom: 60px;
-  left: 40px;
-  right: 8px;
+  bottom: 52px;
+  left: 28px;
+  right: 6px;
   font-family: 'Noto Sans KR', sans-serif;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: #fff;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
   text-align: center;
+  pointer-events: none;
 }
 
 /* 설명 */
@@ -289,24 +214,22 @@
 .featured-btn:hover { background: #e09a3e; transform: translateY(-1px); }
 
 /* 학습 카드 패널 */
-.panel-study {
-  flex: 1;
-}
+.panel-study { flex: 1; }
+
 .study-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
   height: 100%;
 }
+
 .study-card {
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: 16px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 160px;
+  overflow: hidden;
+  background: #fff;
   transition: transform 0.2s, box-shadow 0.2s;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
@@ -314,22 +237,100 @@
   transform: translateY(-4px);
   box-shadow: 0 8px 20px rgba(0,0,0,0.14);
 }
-.study-card-top {
-  width: 100%;
+
+/* 이미지 씬 */
+.study-card-scene {
+  position: relative;
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  min-height: 150px;
+  overflow: hidden;
 }
-.study-emoji {
-  font-size: 48px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+
+.study-layer {
+  position: absolute;
+  object-fit: contain;
 }
-.study-label {
+
+/* ── 오늘의 학습: 원숭이 중앙 크게 ── */
+.today .layer-monkey {
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 75%;
+  z-index: 2;
+}
+
+/* ── 퀴즈 연습: X 좌상, O 우상, Q 좌하, 원숭이 중앙 앞 ── */
+.quiz .layer-quiz-x {
+  top: 8px; left: 13px;
+  width: 30%;
+  z-index: 1;
+}
+.quiz .layer-quiz-o {
+  top: 30px; right: 13px;
+  width: 26%;
+  z-index: 1;
+}
+.quiz .layer-quiz-q {
+  bottom: 0px; left: 0px;
+  width: 36%;
+  z-index: 1;
+}
+.quiz .layer-monkey {
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  z-index: 2;
+}
+
+/* ── 단어 공부: 사과카드 좌상, 숙제카드 우하, 원숭이 앞 ── */
+.word .layer-word-apple {
+  top: 4px; left: 15%;
+  width: 43%;
+  z-index: 1;
+  transform: rotate(-8deg);
+}
+.word .layer-word-hw {
+  bottom: 20px; right: 8px;
+  width: 51%;
+  z-index: 1;
+  transform: rotate(10deg);
+}
+.word .layer-monkey {
+  bottom: -8px;
+  left: 35%;
+  transform: translateX(-50%);
+  width: 60%;
+  z-index: 2;
+}
+
+/* ── 문장 공부: 문장카드 두 개 좌측, 원숭이 우측 앞 ── */
+.sentence .layer-sent-r1 {
+  top: 10px; left: 4px;
+  width: 62%;
+  z-index: 1;
+}
+.sentence .layer-sent-r2 {
+  top: 52px; left: 8px;
+  width: 58%;
+  z-index: 1;
+}
+.sentence .layer-monkey {
+  bottom: -8px;
+  right: 0;
+  width: 65%;
+  z-index: 2;
+}
+
+/* 라벨 바 */
+.study-label-bar {
+  padding: 8px 0;
+  text-align: center;
   font-family: 'Pinkfong Baby SharkOTF', 'Noto Sans KR', sans-serif;
   font-size: 16px;
-  color: #fff;
   font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.15);
-  text-align: center;
+  color: #fff;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
 }

@@ -26,7 +26,31 @@ STOPWORDS = {
     '가요', '오니', '이제야', '절대로', '다시', '이제', '제발',
     '얼른', '혹시', '어찌', '깊이', '조심', '스레', '끝내',
     '마구', '점점', '싱글벙글',
+    # Okt 오분석으로 생기는 잘못된 기본형
+    '돼다',   # 됐어 → 돼다 (잘못된 변환)
+    '배다',   # 배는 → 배다 (조사 오분석)
+    '마',     # 하지마 → 마 (부정 어미 오분석)
 }
+
+# ─── Okt 오변환 교정 사전 ─────────────────────────────────────
+# { 잘못된_기본형: 올바른_기본형 } 또는 None이면 제거
+CORRECTION = {
+    '돼다':  None,       # 됐어 → 돼다 오변환, 제거
+    '배다':  '배',       # 배는 → 배다 오변환, 명사 배로 교정
+    '하지마': None,      # 하지마 → 분리 오류, 제거 (문맥상 의미 없음)
+    '마':    None,       # 부정 어미 마, 제거
+    '지마':  None,
+    '않다':  None,       # 보조 부정, 제거
+    '못하다': None,
+}
+
+# 원문에서 특정 패턴을 미리 교정 (분석 전 전처리)
+PRE_CORRECTIONS = [
+    # 하지마/하지 마 → 금지 표현, 핵심 동사만 남기려면 앞 동사 추출
+    (r'하지\s*마\s*[요세]?', ''),   # 제거
+    (r'됐', '되었'),                 # 됐 → 되었 (Okt가 더 잘 처리)
+    (r'돼', '되어'),                 # 돼 → 되어
+]
 
 # 보조동사 (단독으로는 의미 없음, 앞 동사와 결합해야 의미 있음)
 AUX_VERBS = {'주다', '하다', '되다', '있다', '없다', '보다', '가다', '오다', '버리다', '놓다', '두다'}
@@ -87,12 +111,16 @@ def merge_compounds(text, keywords):
 
 
 def analyze_sentence(text):
-    morphs = okt.pos(text, stem=True)
+    # ── 전처리: 오변환 유발 패턴 교정 ──────────────────────────
+    processed = text
+    for pattern, replacement in PRE_CORRECTIONS:
+        processed = re.sub(pattern, replacement, processed)
+
+    morphs = okt.pos(processed, stem=True)
     raw = []
     seen = set()
 
     # 하다 복합동사 처리: 앞 명사 + 하다 → 명사하다 동사로 합침
-    # 예: [('마련','Noun'), ('하다','Verb')] → [('마련하다','Verb')]
     merged_morphs = []
     i = 0
     while i < len(morphs):
@@ -101,7 +129,6 @@ def analyze_sentence(text):
                 and i > 0
                 and merged_morphs
                 and merged_morphs[-1][1] == 'Noun'):
-            # 앞 명사와 합쳐서 복합동사로
             prev_form = merged_morphs.pop()[0]
             merged_morphs.append((prev_form + '하다', 'Verb'))
         else:
@@ -114,13 +141,20 @@ def analyze_sentence(text):
             continue
         if form in STOPWORDS or is_bad_noun(form, tag):
             continue
-        # 보조동사 단독 제거 (앞 동사와 합쳐진 경우는 이미 처리됨)
         if form in AUX_VERBS:
             continue
         if form in seen:
             continue
         if tag != 'Noun' and len(form) < 2:
             continue
+
+        # ── 후처리: 교정 사전 적용 ──────────────────────────
+        if form in CORRECTION:
+            corrected = CORRECTION[form]
+            if corrected is None:
+                continue   # None → 제거
+            form = corrected
+
         seen.add(form)
         raw.append({'form': form, 'tag': tag})
 

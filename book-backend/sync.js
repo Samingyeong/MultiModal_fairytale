@@ -5,8 +5,8 @@
 const https = require('https')
 const { stmts } = require('./db')
 
-const KEY1 = process.env.CULTURE_API_KEY  || 'f547e882-7cca-4387-9fb5-b70098a0f1e4'
-const KEY2 = process.env.CULTURE_API_KEY2 || '9363f8a2-7636-4d2a-9bc5-f6185f171a35'
+const KEY1 = process.env.CULTURE_API_KEY
+const KEY2 = process.env.CULTURE_API_KEY2
 
 // ─── 한국전래동화 제목 Set ────────────────────────────────────
 const KOREAN_TITLES = new Set([

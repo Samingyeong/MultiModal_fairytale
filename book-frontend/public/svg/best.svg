@@ -1,0 +1,24 @@
+<svg width="184" height="226" viewBox="0 0 184 226" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 리본 꼬리 -->
+  <path d="M169.555 207.158L147.408 207.02L135.102 225.433L91.5391 143.304L47.9766 225.433L35.6699 207.02L13.5234 207.158L57.1016 125L91.5391 143.266L125.977 125L169.555 207.158Z" fill="#F93030"/>
+  <!-- 별 -->
+  <g filter="url(#filter0_d_200_86)">
+    <path d="M91.5234 1L107.803 11.411L126.91 8.52155L137.547 24.654L156.177 29.7856L159.333 48.85L174.265 61.1155L169.395 79.8154L178.047 97.094L165.991 112.196L166.868 131.5L149.712 140.393L142.661 158.384L123.371 159.531L109.612 173.099L91.5234 166.3L73.4351 173.099L59.676 159.531L40.3861 158.384L33.3352 140.393L16.1792 131.5L17.0557 112.196L5.00003 97.094L13.6524 79.8154L8.78152 61.1155L23.7137 48.85L26.8698 29.7856L45.4999 24.654L56.1373 8.52155L75.2439 11.411L91.5234 1Z" fill="#FFD502"/>
+  </g>
+  <!-- Best 텍스트 -->
+  <text x="91.5" y="82" text-anchor="middle" font-family="'Arial Rounded MT Bold', 'Arial', sans-serif" font-size="28" font-weight="900" fill="#333">Best</text>
+  <!-- seller 텍스트 -->
+  <text x="91.5" y="112" text-anchor="middle" font-family="'Arial Rounded MT Bold', 'Arial', sans-serif" font-size="20" font-weight="700" fill="#555">seller</text>
+  <defs>
+    <filter id="filter0_d_200_86" x="0" y="0" width="183.047" height="182.099" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="4"/>
+      <feGaussianBlur stdDeviation="2.5"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.3 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_200_86"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_200_86" result="shape"/>
+    </filter>
+  </defs>
+</svg>
