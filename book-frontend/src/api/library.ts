@@ -93,6 +93,21 @@ export async function analyzeSentence(text: string): Promise<MorphResult> {
   return res.json()
 }
 
+// 자막 전체 일괄 분석 (책 열 때 한번에 처리 → 단어 클릭 시 즉시 반환)
+export async function analyzeBatch(sentences: string[]): Promise<Map<string, MorphResult>> {
+  const res = await fetch(`${BASE}/api/morpheme/batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sentences }),
+  })
+  const data: (MorphResult & { sentence: string })[] = await res.json()
+  const map = new Map<string, MorphResult>()
+  for (const item of data) {
+    map.set(item.sentence, item)
+  }
+  return map
+}
+
 // ─── 한국어사전 ───────────────────────────────────────────────
 export interface DictItem { word: string; pos: string; grade: string; definitions: string[] }
 

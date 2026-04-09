@@ -13,24 +13,80 @@ const app  = express()
 const PORT = 4000
 const NLP_SCRIPT = path.join(__dirname, 'korean_nlp.py')
 
-// ─── Python korean_nlp.py 호출 헬퍼 ──────────────────────────
+// ─── Python 상주 프로세스 (매번 시작 오버헤드 제거) ──────────
+let pyProcess = null
+let pyBuffer  = ''
+let pyResolvers = []  // [{resolve, reject, id}]
+let reqId = 0
+
+function startPython() {
+  pyProcess = spawn('python', ['-u', '-c', `
+import sys, json
+sys.path.insert(0, r'${__dirname.replace(/\\/g, '\\\\')}')
+from korean_nlp import analyze_sentence, analyze_word
+for line in sys.stdin:
+    line = line.strip()
+    if not line: continue
+    try:
+        obj = json.loads(line)
+        mode = obj.get('mode','sentence')
+        text = obj.get('text','')
+        rid  = obj.get('id', 0)
+        if mode == 'word':
+            result = analyze_word(text)
+        else:
+            result = analyze_sentence(text)
+        print(json.dumps({'id': rid, 'result': result}), flush=True)
+    except Exception as e:
+        print(json.dumps({'id': obj.get('id',0), 'error': str(e)}), flush=True)
+`], { env: { ...process.env, PYTHONIOENCODING: 'utf-8' } })
+
+  pyProcess.stdout.on('data', data => {
+    pyBuffer += data.toString()
+    const lines = pyBuffer.split('\n')
+    pyBuffer = lines.pop()
+    for (const line of lines) {
+      if (!line.trim()) continue
+      try {
+        const { id, result, error } = JSON.parse(line)
+        const idx = pyResolvers.findIndex(r => r.id === id)
+        if (idx >= 0) {
+          const [{ resolve, reject }] = pyResolvers.splice(idx, 1)
+          error ? reject(new Error(error)) : resolve(result)
+        }
+      } catch {}
+    }
+  })
+
+  pyProcess.on('close', () => {
+    console.log('[nlp] Python 프로세스 종료, 재시작...')
+    pyProcess = null
+    setTimeout(startPython, 1000)
+  })
+
+  pyProcess.on('error', e => console.error('[nlp] 프로세스 오류:', e.message))
+  console.log('[nlp] Python 상주 프로세스 시작')
+}
+
 function runNlp(mode, text) {
   return new Promise((resolve, reject) => {
-    const py = spawn('python', [NLP_SCRIPT, mode, text], {
-      env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
-    })
-    let out = '', err = ''
-    py.stdout.on('data', d => out += d.toString())
-    py.stderr.on('data', d => err += d.toString())
-    py.on('close', code => {
-      if (code !== 0) return reject(new Error(err || `exit ${code}`))
-      try { resolve(JSON.parse(out.trim())) }
-      catch { reject(new Error('JSON parse error: ' + out)) }
-    })
-    py.on('error', reject)
-    setTimeout(() => { py.kill(); reject(new Error('timeout')) }, 15000)
+    if (!pyProcess) return reject(new Error('Python process not ready'))
+    const id = ++reqId
+    pyResolvers.push({ id, resolve, reject })
+    pyProcess.stdin.write(JSON.stringify({ id, mode, text }) + '\n')
+    setTimeout(() => {
+      const idx = pyResolvers.findIndex(r => r.id === id)
+      if (idx >= 0) {
+        pyResolvers.splice(idx, 1)
+        reject(new Error('timeout'))
+      }
+    }, 10000)
   })
 }
+
+// ─── 사전 결과 서버 캐시 ──────────────────────────────────────
+const nlpCache  = new Map()  // text → result
+const dictCache = new Map()  // word → items
 
 app.use(cors())
 app.use(express.json())
@@ -125,23 +181,43 @@ app.get('/proxy', (req, res) => {
   }).on('error', e => res.status(502).send(e.message))
 })
 
-// ─── 형태소 분석 (korean_nlp.py) ─────────────────────────────
-// GET /api/morpheme?mode=word&q=살았어
-// GET /api/morpheme?mode=sentence&q=어느 시골집에 암탉이 살았어
+// ─── 형태소 분석 (korean_nlp.py 상주 프로세스) ───────────────
 app.get('/api/morpheme', async (req, res) => {
   const { mode = 'sentence', q } = req.query
   if (!q) return res.status(400).json({ error: 'q is required' })
+  const cacheKey = `${mode}:${q}`
+  if (nlpCache.has(cacheKey)) return res.json(nlpCache.get(cacheKey))
   try {
     const result = await runNlp(mode, q)
+    nlpCache.set(cacheKey, result)
     res.json(result)
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
 })
 
-// ─── 한국어사전 ───────────────────────────────────────────────
+// 자막 전체 일괄 분석 (책 열 때 한번에 처리)
+app.post('/api/morpheme/batch', async (req, res) => {
+  const { sentences } = req.body  // string[]
+  if (!Array.isArray(sentences)) return res.status(400).json({ error: 'sentences required' })
+  try {
+    const results = await Promise.all(
+      sentences.map(async s => {
+        const key = `sentence:${s}`
+        if (nlpCache.has(key)) return { sentence: s, ...nlpCache.get(key) }
+        const r = await runNlp('sentence', s)
+        nlpCache.set(key, r)
+        return { sentence: s, ...r }
+      })
+    )
+    res.json(results)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// ─── 한국어사전 (캐시 포함) ───────────────────────────────────
 const KRDICT_KEY = process.env.KRDICT_API_KEY || '7C7752C49997907B4BDCB176729D802B'
-const dictCache  = new Map()
 
 app.get('/dict', async (req, res) => {
   const q = req.query.q
@@ -183,6 +259,7 @@ app.post('/admin/sync', async (req, res) => {
 // ─── 서버 시작 ────────────────────────────────────────────────
 app.listen(PORT, async () => {
   console.log(`📚 book-backend 실행 중: http://localhost:${PORT}`)
+  startPython()  // Python 상주 프로세스 시작
 
   const cnt = db.prepare(`SELECT COUNT(*) as c FROM books`).get().c
   if (cnt === 0) {

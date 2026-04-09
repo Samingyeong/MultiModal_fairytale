@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { getVideoUrl, getVttUrl, proxy, lookupDict, analyzeWord, analyzeSentence, type DictItem } from '../api/library'
+import { getVideoUrl, getVttUrl, proxy, lookupDict, analyzeWord, analyzeSentence, analyzeBatch, type DictItem } from '../api/library'
 import type { Cue } from '../types'
 import './Reader.css'
 
@@ -59,6 +59,10 @@ export default function Reader() {
   // 단어 패널
   const [wordPanel, setWordPanel] = useState<{ word: string; items: DictItem[] | null } | null>(null)
 
+  // 사전 결과 프리캐시 (자막 로드 시 미리 분석)
+  const morphCacheRef = useRef<Map<string, { form: string; tag: string }[]>>(new Map())
+  const dictCacheRef  = useRef<Map<string, DictItem[]>>(new Map())
+
   const videoRef = useRef<HTMLVideoElement>(null)
   const guideCanvasRef = useRef<HTMLCanvasElement>(null)
   const inputCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -72,7 +76,41 @@ export default function Reader() {
       const res = await fetch(getVttUrl(nlcyThumb, l))
       if (!res.ok) throw new Error()
       const text = await res.text()
-      setCues(parseVtt(text))
+      const parsed = parseVtt(text)
+      setCues(parsed)
+
+      // 자막 로드 완료 → 백그라운드에서 전체 문장 일괄 분석 + 사전 프리캐시
+      if (l === 'ko') {
+        const sentences = parsed.map(c => c.text)
+        analyzeBatch(sentences).then(async morphMap => {
+          morphCacheRef.current = new Map()
+          // 각 문장의 키워드를 단어별로 캐시
+          for (const [sentence, result] of morphMap) {
+            for (const kw of result.keywords || []) {
+              // 원문 단어 → 기본형 매핑
+              for (const word of sentence.split(/\s+/)) {
+                const clean = word.replace(/[^가-힣a-zA-Z]/g, '')
+                if (clean && !morphCacheRef.current.has(clean)) {
+                  if (sentence.includes(clean)) {
+                    morphCacheRef.current.set(clean, result.keywords)
+                  }
+                }
+              }
+            }
+          }
+          // 키워드 기본형으로 사전 미리 조회
+          const allForms = new Set<string>()
+          for (const result of morphMap.values()) {
+            for (const kw of result.keywords || []) allForms.add(kw.form)
+          }
+          await Promise.allSettled([...allForms].map(async form => {
+            if (!dictCacheRef.current.has(form)) {
+              const items = await lookupDict(form)
+              dictCacheRef.current.set(form, items)
+            }
+          }))
+        }).catch(() => {})
+      }
     } catch {
       setCues([])
     } finally {
@@ -118,28 +156,42 @@ export default function Reader() {
     drawGuide(word)
 
     let searchWord = word
+
+    // 1. 사전 캐시에서 먼저 확인 (프리캐시된 경우 즉시 반환)
+    if (dictCacheRef.current.has(word)) {
+      return setWordPanel({ word, items: dictCacheRef.current.get(word)! })
+    }
+
     try {
-      // 문장 전체 컨텍스트가 있으면 문장 분석으로 기본형 추출 (더 정확)
+      // 2. 형태소 분석으로 기본형 추출 (문장 컨텍스트 우선)
       if (sentenceContext) {
         const result = await analyzeSentence(sentenceContext)
-        const match = result.keywords.find(k =>
-          sentenceContext.includes(word) &&
-          (k.form === word || word.startsWith(k.form) || k.form.startsWith(word.slice(0, 2)))
-        )
-        if (match && match.form !== word) {
-          searchWord = match.form
-        }
+        // 클릭한 단어와 가장 잘 매칭되는 키워드 찾기
+        // 우선순위: 완전일치 > 원문에서 클릭단어가 키워드 기본형으로 시작 > 앞 2글자 일치
+        const match =
+          result.keywords.find(k => k.form === word) ||
+          result.keywords.find(k =>
+            word.length >= 2 && k.form.length >= 2 &&
+            sentenceContext.includes(word) &&
+            // 클릭 단어가 기본형을 포함하거나 기본형이 클릭 단어의 어간
+            (word.startsWith(k.form.replace(/다$/, '')) && k.form.endsWith('다'))
+          )
+        if (match && match.form !== word) searchWord = match.form
       }
-      // 컨텍스트 없거나 매칭 실패 시 단어 단독 분석
       if (searchWord === word) {
         const tokens = await analyzeWord(word)
-        if (tokens.length > 0 && tokens[0].form !== word) {
-          searchWord = tokens[0].form
-        }
+        if (tokens.length > 0 && tokens[0].form !== word) searchWord = tokens[0].form
       }
     } catch {}
 
+    // 3. 캐시된 사전 결과 확인
+    if (dictCacheRef.current.has(searchWord)) {
+      return setWordPanel({ word, items: dictCacheRef.current.get(searchWord)! })
+    }
+
+    // 4. 사전 API 호출
     const items = await lookupDict(searchWord)
+    dictCacheRef.current.set(searchWord, items)
     setWordPanel({ word, items })
   }
 
